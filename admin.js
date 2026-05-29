@@ -1,48 +1,75 @@
 import { supabase } from './supabase-config.js';
 
-// DOM Elements
+// ================= ROUTING TAB =================
+const navDashboard = document.getElementById('navDashboard');
+const navSettings = document.getElementById('navSettings');
+const viewDashboard = document.getElementById('viewDashboard');
+const viewSettings = document.getElementById('viewSettings');
+
+function switchTab(tab) {
+    if(tab === 'dashboard') {
+        viewDashboard.classList.remove('hidden');
+        viewSettings.classList.add('hidden');
+        
+        navDashboard.classList.add('text-indigo-600', 'border-indigo-600');
+        navDashboard.classList.remove('text-slate-500', 'border-transparent');
+        
+        navSettings.classList.add('text-slate-500', 'border-transparent');
+        navSettings.classList.remove('text-indigo-600', 'border-indigo-600');
+        
+        fetchOrders();
+    } else {
+        viewDashboard.classList.add('hidden');
+        viewSettings.classList.remove('hidden');
+        
+        navSettings.classList.add('text-indigo-600', 'border-indigo-600');
+        navSettings.classList.remove('text-slate-500', 'border-transparent');
+        
+        navDashboard.classList.add('text-slate-500', 'border-transparent');
+        navDashboard.classList.remove('text-indigo-600', 'border-indigo-600');
+        
+        fetchOngkir();
+        fetchKurir();
+    }
+}
+
+navDashboard.addEventListener('click', (e) => { e.preventDefault(); switchTab('dashboard'); });
+navSettings.addEventListener('click', (e) => { e.preventDefault(); switchTab('settings'); });
+
+// ================= DASHBOARD PESANAN =================
 const modalOrder = document.getElementById('modalOrder');
-const modalReceipt = document.getElementById('modalReceipt');
-const btnNewOrder = document.getElementById('btnNewOrder');
-const closeOrderModal = document.getElementById('closeOrderModal');
-const closeReceiptModal = document.getElementById('closeReceiptModal');
 const formOrder = document.getElementById('formOrder');
 const orderTableBody = document.getElementById('orderTableBody');
+const selectWilayah = document.getElementById('wilayah_ongkir');
 
-// Toggles
-btnNewOrder.onclick = () => modalOrder.classList.remove('hidden');
-closeOrderModal.onclick = () => modalOrder.classList.add('hidden');
-closeReceiptModal.onclick = () => modalReceipt.classList.add('hidden');
+document.getElementById('btnNewOrder').onclick = async () => {
+    // Muat data wilayah untuk dropdown saat buka modal pesanan
+    const { data } = await supabase.from('pengaturan_ongkir').select('*');
+    selectWilayah.innerHTML = data.map(w => `<option value="${w.wilayah}">[Rp ${w.tarif.toLocaleString('id-ID')}] - ${w.wilayah}</option>`).join('');
+    modalOrder.classList.remove('hidden');
+};
+document.getElementById('closeOrderModal').onclick = () => { modalOrder.classList.add('hidden'); formOrder.reset(); };
+document.getElementById('closeReceiptModal').onclick = () => document.getElementById('modalReceipt').classList.add('hidden');
 
-// Load Data
 async function fetchOrders() {
     const { data, error } = await supabase.from('pesanan').select('*').order('created_at', { ascending: false });
-    if (error) return console.error(error);
+    if (error) return;
     
-    // Update Analytics (Sederhana)
     document.getElementById('totalOrders').innerText = data.length;
     document.getElementById('waitingOrders').innerText = data.filter(o => o.status === 'Menunggu Kurir').length;
     document.getElementById('completedOrders').innerText = data.filter(o => o.status === 'Selesai').length;
 
     orderTableBody.innerHTML = data.map(order => {
-        // Logika pewarnaan status
-        let statusBadge = '';
-        if (order.status === 'Menunggu Kurir') {
-            statusBadge = `<span class="px-2.5 py-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-md text-xs font-medium">${order.status}</span>`;
-        } else if (order.status === 'Sedang Diantar') {
-            statusBadge = `<span class="px-2.5 py-1 bg-blue-100 text-blue-700 border border-blue-200 rounded-md text-xs font-medium">${order.status}</span>`;
-        } else {
-            statusBadge = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-md text-xs font-medium">${order.status}</span>`;
-        }
-
+        let badge = order.status === 'Menunggu Kurir' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                    order.status === 'Sedang Diantar' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
         return `
             <tr class="hover:bg-slate-50 transition group">
                 <td class="p-4 text-slate-800 font-medium">${order.no_resep}</td>
                 <td class="p-4 text-slate-600">${order.nama_pasien}</td>
                 <td class="p-4 text-slate-600 truncate max-w-xs">${order.alamat}</td>
-                <td class="p-4">${statusBadge}</td>
+                <td class="p-4"><span class="px-2.5 py-1 ${badge} border rounded-md text-xs font-medium">${order.status}</span></td>
                 <td class="p-4 text-center">
-                    <button onclick="showReceipt('${order.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition" title="Cetak QR">
+                    <button onclick="showReceipt('${order.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition">
                         <i data-lucide="printer" class="w-4 h-4"></i>
                     </button>
                 </td>
@@ -52,14 +79,15 @@ async function fetchOrders() {
     lucide.createIcons();
 }
 
-// Submit Order
 formOrder.onsubmit = async (e) => {
     e.preventDefault();
+    const patokanAlamat = document.getElementById('alamat').value;
+    const wilayahText = selectWilayah.value;
+    
     const pesanan = {
         no_resep: document.getElementById('no_resep').value,
         nama_pasien: document.getElementById('nama_pasien').value,
-        alamat: document.getElementById('alamat').value,
-        patokan: document.getElementById('patokan').value
+        alamat: `${wilayahText} - ${patokanAlamat}` // Gabung wilayah dan detail jalan
     };
 
     const { data, error } = await supabase.from('pesanan').insert([pesanan]).select().single();
@@ -71,7 +99,6 @@ formOrder.onsubmit = async (e) => {
     }
 };
 
-// Show Receipt & QR
 window.showReceipt = async (id, orderData = null) => {
     if (!orderData) {
         const { data } = await supabase.from('pesanan').select('*').eq('id', id).single();
@@ -81,21 +108,113 @@ window.showReceipt = async (id, orderData = null) => {
     document.getElementById('receiptDetails').innerHTML = `
         <p class="flex justify-between border-b border-slate-200 pb-1 mb-1"><span class="text-slate-500">Resep</span> <strong class="text-slate-800">${orderData.no_resep}</strong></p>
         <p class="flex justify-between border-b border-slate-200 pb-1 mb-1"><span class="text-slate-500">Pasien</span> <strong class="text-slate-800">${orderData.nama_pasien}</strong></p>
-        <p class="mt-2"><span class="block text-slate-500 text-xs mb-1">Alamat Pengiriman</span> <span class="text-slate-800 block leading-tight">${orderData.alamat}</span></p>
-        <p class="mt-2"><span class="block text-slate-500 text-xs mb-1">Patokan</span> <span class="text-slate-800">${orderData.patokan || '-'}</span></p>
+        <p class="mt-2"><span class="block text-slate-500 text-xs mb-1">Alamat Tujuan</span> <span class="text-slate-800 block leading-tight">${orderData.alamat}</span></p>
     `;
 
-    document.getElementById('qrcode').innerHTML = ''; // Hapus QR lama
-    const trackingUrl = `${window.location.origin}/tracking.html?id=${id}`;
-    new QRCode(document.getElementById("qrcode"), {
-        text: trackingUrl,
-        width: 140,
-        height: 140,
-        colorDark : "#0f172a", // Warna QR code (slate-900)
-        colorLight : "#ffffff",
-    });
-
-    modalReceipt.classList.remove('hidden');
+    document.getElementById('qrcode').innerHTML = '';
+    new QRCode(document.getElementById("qrcode"), { text: `${window.location.origin}/tracking.html?id=${id}`, width: 140, height: 140, colorDark : "#0f172a", colorLight : "#ffffff" });
+    document.getElementById('modalReceipt').classList.remove('hidden');
 };
 
+// ================= CRUD ONGKIR =================
+const modalOngkir = document.getElementById('modalOngkir');
+const formOngkir = document.getElementById('formOngkir');
+const ongkirTableBody = document.getElementById('ongkirTableBody');
+
+document.getElementById('btnNewOngkir').onclick = () => { document.getElementById('ongkir_id').value = ''; document.getElementById('titleOngkir').innerText = 'Tambah Wilayah'; modalOngkir.classList.remove('hidden'); formOngkir.reset(); };
+document.getElementById('closeOngkirModal').onclick = () => modalOngkir.classList.add('hidden');
+
+async function fetchOngkir() {
+    const { data } = await supabase.from('pengaturan_ongkir').select('*').order('wilayah', { ascending: true });
+    ongkirTableBody.innerHTML = data.map(o => `
+        <tr class="hover:bg-slate-50">
+            <td class="p-4 text-slate-700">${o.wilayah}</td>
+            <td class="p-4 text-slate-700 font-medium">Rp ${o.tarif.toLocaleString('id-ID')}</td>
+            <td class="p-4 text-center">
+                <button onclick="editOngkir('${o.id}', '${o.wilayah}', ${o.tarif})" class="text-blue-500 hover:text-blue-700 mx-1"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                <button onclick="deleteOngkir('${o.id}')" class="text-red-500 hover:text-red-700 mx-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </td>
+        </tr>
+    `).join('');
+    lucide.createIcons();
+}
+
+window.editOngkir = (id, wilayah, tarif) => {
+    document.getElementById('titleOngkir').innerText = 'Edit Wilayah';
+    document.getElementById('ongkir_id').value = id;
+    document.getElementById('ongkir_wilayah').value = wilayah;
+    document.getElementById('ongkir_tarif').value = tarif;
+    modalOngkir.classList.remove('hidden');
+};
+
+window.deleteOngkir = async (id) => {
+    if(confirm('Hapus wilayah ini?')) { await supabase.from('pengaturan_ongkir').delete().eq('id', id); fetchOngkir(); }
+};
+
+formOngkir.onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('ongkir_id').value;
+    const payload = { wilayah: document.getElementById('ongkir_wilayah').value, tarif: document.getElementById('ongkir_tarif').value };
+    
+    if(id) await supabase.from('pengaturan_ongkir').update(payload).eq('id', id);
+    else await supabase.from('pengaturan_ongkir').insert([payload]);
+    
+    modalOngkir.classList.add('hidden');
+    fetchOngkir();
+};
+
+// ================= CRUD KURIR =================
+const modalKurir = document.getElementById('modalKurir');
+const formKurir = document.getElementById('formKurir');
+const kurirTableBody = document.getElementById('kurirTableBody');
+
+document.getElementById('btnNewKurir').onclick = () => { document.getElementById('kurir_id').value = ''; document.getElementById('titleKurir').innerText = 'Tambah Kurir'; modalKurir.classList.remove('hidden'); formKurir.reset(); };
+document.getElementById('closeKurirModal').onclick = () => modalKurir.classList.add('hidden');
+
+async function fetchKurir() {
+    const { data } = await supabase.from('kurir').select('*').order('created_at', { ascending: false });
+    kurirTableBody.innerHTML = data.map(k => `
+        <tr class="hover:bg-slate-50">
+            <td class="p-4 text-slate-700">${k.nama}</td>
+            <td class="p-4 text-slate-500">@${k.username}</td>
+            <td class="p-4 text-slate-700">${k.no_hp}</td>
+            <td class="p-4 text-center">
+                <button onclick="editKurir('${k.id}', '${k.nama}', '${k.username}', '${k.no_hp}')" class="text-blue-500 hover:text-blue-700 mx-1"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                <button onclick="deleteKurir('${k.id}')" class="text-red-500 hover:text-red-700 mx-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </td>
+        </tr>
+    `).join('');
+    lucide.createIcons();
+}
+
+window.editKurir = (id, nama, username, no_hp) => {
+    document.getElementById('titleKurir').innerText = 'Edit Kurir';
+    document.getElementById('kurir_id').value = id;
+    document.getElementById('kurir_nama').value = nama;
+    document.getElementById('kurir_username').value = username;
+    document.getElementById('kurir_nohp').value = no_hp;
+    modalKurir.classList.remove('hidden');
+};
+
+window.deleteKurir = async (id) => {
+    if(confirm('Hapus kurir ini?')) { await supabase.from('kurir').delete().eq('id', id); fetchKurir(); }
+};
+
+formKurir.onsubmit = async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('kurir_id').value;
+    const payload = { 
+        nama: document.getElementById('kurir_nama').value, 
+        username: document.getElementById('kurir_username').value,
+        no_hp: document.getElementById('kurir_nohp').value
+    };
+    
+    if(id) await supabase.from('kurir').update(payload).eq('id', id);
+    else await supabase.from('kurir').insert([payload]);
+    
+    modalKurir.classList.add('hidden');
+    fetchKurir();
+};
+
+// Init Data Pertama Kali
 fetchOrders();
