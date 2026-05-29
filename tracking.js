@@ -57,14 +57,18 @@ function renderStatus(order) {
 
     let actionButton = '';
     if (order.status === 'Sedang Diantar' && order.kurir) {
-        // Format nomor HP ke standar WA (ganti 0 di depan jadi 62)
+        // Format nomor HP
         let waNumber = order.kurir.no_hp.replace(/[^0-9]/g, '');
         if (waNumber.startsWith('0')) {
             waNumber = '62' + waNumber.substring(1);
         }
         
+        // Tambahkan teks otomatis
+        const pesanWA = encodeURIComponent(`Halo, saya pasien dengan No Resep: ${order.no_resep}. Saya ingin menanyakan status pengantaran obat saya.`);
+        
+        // Gunakan api.whatsapp.com dan rel="noopener noreferrer" untuk keamanan browser
         actionButton = `
-            <a href="https://wa.me/${waNumber}" target="_blank" class="mt-6 flex items-center justify-center w-full gap-2 bg-green-500 text-white py-3 rounded-xl font-medium hover:bg-green-600 transition shadow-sm">
+            <a href="https://api.whatsapp.com/send?phone=${waNumber}&text=${pesanWA}" target="_blank" rel="noopener noreferrer" class="mt-6 flex items-center justify-center w-full gap-2 bg-green-500 text-white py-3 rounded-xl font-medium hover:bg-green-600 transition shadow-sm">
                 <i data-lucide="message-circle" class="w-5 h-5"></i> Hubungi Kurir (${order.kurir.nama})
             </a>
         `;
