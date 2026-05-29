@@ -1,5 +1,62 @@
 import { supabase } from './supabase-config.js';
 
+// ================= SISTEM LOGIN ADMIN =================
+const loginView = document.getElementById('loginView');
+const appView = document.getElementById('appView');
+const formLoginAdmin = document.getElementById('formLoginAdmin');
+
+// Cek Sesi Admin
+if (localStorage.getItem('sobatkita_admin_logged_in') === 'true') {
+    showAppView();
+}
+
+formLoginAdmin.onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnLoginAdmin');
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2"></i> Memeriksa...`;
+    lucide.createIcons();
+    document.getElementById('loginError').classList.add('hidden');
+
+    const username = document.getElementById('adminUsername').value;
+    const password = document.getElementById('adminPassword').value;
+
+    // Cek kecocokan di database
+    const { data, error } = await supabase
+        .from('admin_akun')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
+
+    if (data) {
+        localStorage.setItem('sobatkita_admin_logged_in', 'true');
+        showAppView();
+    } else {
+        document.getElementById('loginError').classList.remove('hidden');
+    }
+    btn.innerHTML = `Masuk ke Dashboard`;
+};
+
+document.getElementById('btnLogoutAdmin').onclick = () => {
+    localStorage.removeItem('sobatkita_admin_logged_in');
+    appView.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    formLoginAdmin.reset();
+};
+
+function showAppView() {
+    loginView.classList.add('hidden');
+    appView.classList.remove('hidden');
+    // Mulai tarik data saat login berhasil
+    fetchOrders(); 
+}
+
+// ================= ROUTING TAB (KODE LAMA TETAP SAMA) =================
+// [PASTE KODE ROUTING TAB, DASHBOARD PESANAN, DAN CRUD PENGATURAN ANDA DI SINI]
+
+// PENTING: Hapus pemanggilan `fetchOrders();` di baris paling bawah kode Anda,
+// Karena data pesanan sekarang hanya akan dipanggil (di fetch) di dalam fungsi showAppView()
+// setelah admin berhasil login.
 // ================= ROUTING TAB =================
 const navDashboard = document.getElementById('navDashboard');
 const navSettings = document.getElementById('navSettings');
