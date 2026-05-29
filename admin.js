@@ -80,5 +80,66 @@ window.showReceipt = async (id, orderData = null) => {
 
     modalReceipt.classList.remove('hidden');
 };
+const settingsModal =
+document.getElementById('settingsModal');
 
+document
+.getElementById('btnSettings')
+.onclick = () => {
+
+    settingsModal.classList.remove('hidden');
+    settingsModal.classList.add('flex');
+
+};
+
+document
+.getElementById('closeSettings')
+.onclick = () => {
+
+    settingsModal.classList.add('hidden');
+    settingsModal.classList.remove('flex');
+
+};
+async function loadAnalytics() {
+
+    const { data } =
+    await supabase
+    .from('pesanan')
+    .select('*');
+
+    const total = data.length;
+
+    const waiting =
+    data.filter(
+        x => x.status === 'Menunggu Kurir'
+    ).length;
+
+    const delivery =
+    data.filter(
+        x => x.status === 'Sedang Diantar'
+    ).length;
+
+    const completed =
+    data.filter(
+        x => x.status === 'Selesai'
+    ).length;
+
+    document.getElementById(
+        'totalOrders'
+    ).innerText = total;
+
+    document.getElementById(
+        'waitingOrders'
+    ).innerText = waiting;
+
+    document.getElementById(
+        'deliveryOrders'
+    ).innerText = delivery;
+
+    document.getElementById(
+        'completedOrders'
+    ).innerText = completed;
+}
+fetchOrders();
+loadAnalytics();
 fetchOrders();
