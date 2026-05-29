@@ -9,8 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased">
-    <div class="flex h-screen">
-      <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
+  <div class="min-h-screen">
+    <div class="max-w-7xl mx-auto p-6">
     <div class="flex items-center justify-between">
 
         <div class="flex items-center gap-4">
@@ -41,7 +41,7 @@
     </div>
 </header>
 
-        <main class="flex-1 overflow-y-auto p-8">
+        <main>
             <div class="flex justify-between items-center mb-8">
                 <h1 class="text-2xl font-semibold">Dashboard Analitik</h1>
                 <button id="btnNewOrder" class="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-gray-800 transition">
@@ -207,7 +207,8 @@
             </div>
         </div>
     </div>
-
+        </div>
+    </div>
     <script type="module" src="admin.js"></script>
     <script>lucide.createIcons();</script>
     <div id="settingsModal"
