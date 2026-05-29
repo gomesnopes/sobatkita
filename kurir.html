@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kurir SOBAT KITA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased">
+    <div id="app" class="max-w-md mx-auto bg-white min-h-screen shadow-md flex flex-col relative">
+        
+        <header class="bg-gray-900 text-white p-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i data-lucide="bike" class="w-5 h-5"></i>
+                <h1 class="font-semibold tracking-tight">Portal Kurir</h1>
+            </div>
+            <button id="btnScan" class="bg-white/10 p-2 rounded-md hover:bg-white/20">
+                <i data-lucide="scan-line" class="w-5 h-5"></i>
+            </button>
+        </header>
+
+        <div id="scannerContainer" class="hidden p-4 bg-gray-50 border-b">
+            <div id="reader" class="w-full rounded overflow-hidden"></div>
+            <button id="closeScanner" class="mt-4 w-full py-2 bg-gray-200 text-sm font-medium rounded-md">Tutup Scanner</button>
+        </div>
+
+        <main class="flex-1 overflow-y-auto p-4 space-y-4" id="courierOrders">
+            </main>
+    </div>
+
+    <script type="module" src="kurir.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
